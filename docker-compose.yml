@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: devops_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: devops_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Mount dump file so it can be restored inside container
+      - ./devops_db_dump.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d devops_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application Service
+  app:
+    build: .
+    container_name: devops_crud_app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: devops_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      ENVIRONMENT: production
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:

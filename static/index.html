@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management - PostgreSQL Production CRUD</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-icon">🐘</div>
+                <div>
+                    <h1>DevOps CRUD App</h1>
+                    <p class="subtitle">PostgreSQL Backend • Local-to-Production Dump & Deploy</p>
+                </div>
+            </div>
+            <div class="db-pill">
+                <span class="status-indicator"></span>
+                <span id="db-status-text">Connected: devops_db (localhost:5432)</span>
+            </div>
+        </header>
+
+        <!-- Stats Overview -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Total Employees</span>
+                <span class="stat-value" id="stat-total">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Active Employees</span>
+                <span class="stat-value" id="stat-active">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Departments</span>
+                <span class="stat-value" id="stat-departments">0</span>
+            </div>
+            <div class="stat-card highlight">
+                <span class="stat-label">Database Engine</span>
+                <span class="stat-value small">PostgreSQL 18</span>
+            </div>
+        </section>
+
+        <!-- Main Workspace -->
+        <main class="main-card">
+            <!-- Controls Bar -->
+            <div class="toolbar">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search by name, email, or role...">
+                </div>
+                <div class="filter-box">
+                    <select id="departmentFilter">
+                        <option value="">All Departments</option>
+                        <option value="DevOps & Cloud">DevOps & Cloud</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="QA & Testing">QA & Testing</option>
+                        <option value="Security">Security</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="btnRefresh" title="Refresh table">↻ Refresh</button>
+                    <button class="btn btn-primary" id="btnOpenAddModal">+ Add Employee</button>
+                </div>
+            </div>
+
+            <!-- Quick Sample Data Helper Banner -->
+            <div class="sample-data-banner">
+                <div class="banner-text">
+                    <strong>💡 Practice Adding Data:</strong> Click any preset to instantly test adding new records to PostgreSQL:
+                </div>
+                <div class="sample-buttons">
+                    <button class="btn-sample" onclick="fillAndOpenSample(1)">+ David Kim (Kubernetes)</button>
+                    <button class="btn-sample" onclick="fillAndOpenSample(2)">+ Aisha Patel (Security)</button>
+                    <button class="btn-sample" onclick="fillAndOpenSample(3)">+ Carlos Gomez (QA)</button>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Employee</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Salary</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeesTableBody">
+                        <tr>
+                            <td colspan="8" class="text-center loading-cell">Loading records from PostgreSQL...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <!-- DevOps Database Dump & Deployment Workshop Card -->
+        <section class="devops-workshop-card">
+            <div class="workshop-header">
+                <div class="workshop-title">
+                    <span class="badge-devops">DevOps Learning Lab</span>
+                    <h2>Deploying Local Database to Production via Dump Method</h2>
+                </div>
+                <button class="btn btn-success" id="btnDownloadDump">
+                    ⬇ Download devops_db_dump.sql
+                </button>
+            </div>
+            <p class="workshop-desc">
+                When you develop locally on your laptop, your data sits in your local PostgreSQL. Here is the standard DevOps 3-step workflow to export this database and restore it to a production server (AWS EC2, RDS, DigitalOcean, or Docker):
+            </p>
+
+            <div class="steps-flow">
+                <div class="step-box">
+                    <div class="step-num">Step 1</div>
+                    <h3>Dump on Local Laptop</h3>
+                    <p>Run <code>pg_dump</code> to generate a complete SQL file of tables & records:</p>
+                    <div class="code-snippet">
+                        <code>pg_dump -U postgres -h localhost -d devops_db -f devops_db_dump.sql</code>
+                        <button class="btn-copy" onclick="copySnippet('pg_dump -U postgres -h localhost -d devops_db -f devops_db_dump.sql')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="step-box">
+                    <div class="step-num">Step 2</div>
+                    <h3>Transfer to Remote Server</h3>
+                    <p>Copy the dump file securely to your production Linux server using SCP:</p>
+                    <div class="code-snippet">
+                        <code>scp devops_db_dump.sql ubuntu@your-server-ip:/tmp/</code>
+                        <button class="btn-copy" onclick="copySnippet('scp devops_db_dump.sql ubuntu@your-server-ip:/tmp/')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="step-box">
+                    <div class="step-num">Step 3</div>
+                    <h3>Restore on Production</h3>
+                    <p>Create the database on production and pipe the dump file using <code>psql</code>:</p>
+                    <div class="code-snippet">
+                        <code>psql -U postgres -h localhost -d devops_db -f /tmp/devops_db_dump.sql</code>
+                        <button class="btn-copy" onclick="copySnippet('psql -U postgres -h localhost -d devops_db -f /tmp/devops_db_dump.sql')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>API Documentation available at <a href="/docs" target="_blank">/docs (Swagger UI)</a> • Health: <a href="/health" target="_blank">/health</a></p>
+        </footer>
+    </div>
+
+    <!-- Modal Form for Add/Edit -->
+    <div class="modal-overlay" id="employeeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New Employee</h3>
+                <button class="modal-close" id="btnCloseModal">&times;</button>
+            </div>
+            <form id="employeeForm">
+                <input type="hidden" id="employeeId">
+                <div class="form-group">
+                    <label for="formName">Full Name *</label>
+                    <input type="text" id="formName" required placeholder="e.g. David Kim">
+                </div>
+                <div class="form-group">
+                    <label for="formEmail">Email Address *</label>
+                    <input type="email" id="formEmail" required placeholder="e.g. david.k@company.com">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formRole">Role / Title *</label>
+                        <input type="text" id="formRole" required placeholder="e.g. Kubernetes Specialist">
+                    </div>
+                    <div class="form-group">
+                        <label for="formDepartment">Department *</label>
+                        <select id="formDepartment" required>
+                            <option value="">Select Department</option>
+                            <option value="DevOps & Cloud">DevOps & Cloud</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="QA & Testing">QA & Testing</option>
+                            <option value="Security">Security</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formSalary">Salary (USD) *</label>
+                        <input type="number" id="formSalary" step="500" required min="1000" placeholder="e.g. 98000">
+                    </div>
+                    <div class="form-group">
+                        <label for="formStatus">Status</label>
+                        <select id="formStatus">
+                            <option value="Active">Active</option>
+                            <option value="Remote">Remote</option>
+                            <option value="On Leave">On Leave</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveEmployee">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
